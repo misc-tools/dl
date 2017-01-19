@@ -34,3 +34,10 @@ http://panhu.me/pdf/BST.pdf
 - Extracted the file types from the link 
 - Need to think more about the flow of the program. 
 
+## Jan 19, 2017 
+
+- Tutorial for `optparse-applicative`:
+  https://hackage.haskell.org/package/optparse-applicative
+  
+- For the option `filetype`, I use a regular option. Need a default
+  value, default to pdf. 

@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Lib
     ( someFunc
     ) where
@@ -10,10 +12,12 @@ import System.FilePath
 
 data Option = Option
   { url :: String
-  , explore :: Bool }
+  , filetype :: String
+  , explore :: Bool}
 
 type URL = String
 type Link = String
+type FileType = String 
 
 sample :: Parser Option
 sample = Option
@@ -21,26 +25,51 @@ sample = Option
          ( long "url"
         <> short 'u'
         <> metavar "URL"
+        <> value sampleUrl
         <> help "URL from which we want to download" )
+     <*> strOption
+         ( long "filetype"
+        <> short 'f'
+        <> value "pdf"
+        <> metavar "FILETYPE"
+        <> help "filetype to download (default: PDF)" )
      <*> switch
          ( long "explore"
         <> short 'e'
         <> help "Whether to explore the URL and report the resources available" )
 
 process :: Option -> IO ()
-process (Option u False) = putStrLn $ "So, you want to download from " ++ u
-process (Option u True) = getStatistics u
+process (Option u f False) = downloadResources u f 
+process (Option u f True) = getStatistics u
 
 sampleUrl :: URL
 sampleUrl = "http://stanford.edu/~pyzhang/publication.html"
 
--- | count how many files of each type from a website 
-getStatistics :: URL -> IO ()
-getStatistics url = do
+-- | download resources of a certain type from the website 
+downloadResources :: URL -> FileType -> IO ()
+downloadResources url ft = do
+  putStrLn $ "Start download from " ++ url
+  putStrLn $ "File type to download: " ++ ft 
+  allLinks <- getResources url 
+  let linksToDownload = map (normalizeLink (takeDirectory url)) $ filter f allLinks
+  putStrLn "Links to download: "
+  mapM_ putStrLn linksToDownload
+  where
+    f link = (takeExtension link) == ("." ++ ft)
+    
+-- | get all resources from the website
+getResources :: URL  -> IO [Link]
+getResources url= do
   src <- getResponseBody =<< simpleHTTP (getRequest url)
   let tags = parseTags src
   let a_tags = getATags tags
   let links = map (fromJust) $ filter isJust $ map extractLink a_tags
+  return links 
+  
+-- | count how many files of each type from a website 
+getStatistics :: URL -> IO ()
+getStatistics url = do
+  links <- getResources url
   let extensions = filter (\e -> ((length e) < 7) && ((length e) > 0)) $ map takeExtension links 
   putStrLn $ "Getting statistics from " ++ url ++ "..."
   putStrLn $ "Display all links..."
@@ -51,7 +80,14 @@ getStatistics url = do
 getATags :: [Tag String] -> [Tag String]
 getATags tags = filter f tags
   where f (TagOpen "a" _) = True
-        f _ = False 
+        f _ = False
+
+-- | normalize a link, if it's relative (start with "./") then replace it with its absolute link.
+normalizeLink :: URL -> URL -> URL
+normalizeLink baseUrl url = if head url == '.'
+  then baseUrl ++ tail url 
+  else url
+  
 
 -- | extract link from <a ...> tag -- heavy template matching
 extractLink :: Tag String -> Maybe String
