@@ -21,7 +21,10 @@ library
                      , tagsoup
                      , HTTP
                      , filepath
-                     
+                     , http-conduit
+                     , bytestring
+                     , async
+                                          
   default-language:    Haskell2010
 
 executable dl

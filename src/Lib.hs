@@ -9,6 +9,11 @@ import Network.HTTP
 import Text.HTML.TagSoup
 import Data.Maybe
 import System.FilePath
+import Network.HTTP.Conduit
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as L
+import Control.Applicative
+import Control.Concurrent.Async
 
 data Option = Option
   { url :: String
@@ -54,9 +59,21 @@ downloadResources url ft = do
   let linksToDownload = map (normalizeLink (takeDirectory url)) $ filter f allLinks
   putStrLn "Links to download: "
   mapM_ putStrLn linksToDownload
+  putStrLn "Begin to download..."
+  xs <- foldr conc (return []) (map downloadResource linksToDownload)
+  print (map B.length xs)
   where
     f link = (takeExtension link) == ("." ++ ft)
-    
+    conc ioa ioas = do
+      (a,as) <- concurrently ioa ioas
+      return (a:as)
+-- | download a single resource 
+downloadResource :: URL -> IO B.ByteString
+downloadResource url = do
+  res <- L.toStrict <$> simpleHttp url
+  putStrLn $ "Finished: " ++ url
+  return res
+
 -- | get all resources from the website
 getResources :: URL  -> IO [Link]
 getResources url= do

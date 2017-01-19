@@ -41,3 +41,14 @@ http://panhu.me/pdf/BST.pdf
   
 - For the option `filetype`, I use a regular option. Need a default
   value, default to pdf. 
+
+- I extracted the links of a certain filetype from the website. The
+  way I did it is that I get all the links and filter them using
+  `takeExtension` function. 
+  
+- The relative links are normalized to absolute links.   
+
+- From a list of links, I downloaded the files concurrently using
+  `async` package.
+  
+- Currently there Need to handle exceptions carefully 
