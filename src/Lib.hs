@@ -76,9 +76,10 @@ downloadResources url ft locationtosave =   if isNothing $ parseURI url
     putStrLn "Links to download: "
     mapM_ putStrLn linksToDownload
     putStrLn "Begin to download..."
-    xs <- foldr conc (return []) (map (\link -> downloadResource link locationtosave)  linksToDownload)
-    print (map B.length xs)
-    putStrLn "DONE. Exit..."
+    --xs <- foldr conc (return []) (map (\link -> downloadResource link locationtosave)  linksToDownload)
+    foldr conc (return []) (map (\link -> downloadResource link locationtosave)  linksToDownload)
+    -- print (map B.length xs)
+    putStrLn "ALL DONE. Exit..."
       where
         f link = (takeExtension link) == ("." ++ ft)
         conc ioa ioas = do
@@ -86,13 +87,15 @@ downloadResources url ft locationtosave =   if isNothing $ parseURI url
           return (a:as)
 
 -- | download a single resource 
-downloadResource :: URL -> FilePath -> IO B.ByteString
-downloadResource url location= do
-  res <- L.toStrict <$> simpleHttp url
-  let filename = location </> (takeFileName url)
-  B.writeFile filename res 
-  putStrLn $ "Finished: " ++ url
-  return res
+downloadResource :: URL -> FilePath -> IO () -- B.ByteString
+downloadResource url location= case parseURI url of
+  Nothing -> do
+    putStrLn $ "WARNING: " ++ url ++ " is not a valid link"
+  otherwise -> do 
+    res <- L.toStrict <$> simpleHttp url
+    let filename = location </> (takeFileName url)
+    B.writeFile filename res 
+    putStrLn $ "FINISHED: " ++ url
 
 -- | get all resources from the website
 getResources :: URL  -> IO [Link]

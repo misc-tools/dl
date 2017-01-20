@@ -68,5 +68,11 @@ and directories are in `System.FilePath.Posix`
 - Bug: the function to convert relative path to absolute path is not
   generalized enough! Better use functions from `network-uri`. 
   
-- 
+- Exceptions need to be handled:
+  + Invalid URL
+  + Dead link 
+
+- To do:
+  + Fix the problem of relative links. Convert them to absolute links,
+    so that they are downloadable. 
 
