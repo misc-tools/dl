@@ -24,6 +24,7 @@ library
                      , http-conduit
                      , bytestring
                      , async
+                     , network-uri
                                           
   default-language:    Haskell2010
 

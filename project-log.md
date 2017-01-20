@@ -52,3 +52,21 @@ http://panhu.me/pdf/BST.pdf
   `async` package.
   
 - Currently there Need to handle exceptions carefully 
+
+- To implement:
+  + where to save files
+  + exception handlers
+
+## Jan 20, 2017 
+
+- Need to save ByteString to file. Functions to manipulate filenames
+and directories are in `System.FilePath.Posix`
+
+- Had some problem with https pages in `networ-http`, need to fix
+  it. People suggest using `http-conduit`. 
+  
+- Bug: the function to convert relative path to absolute path is not
+  generalized enough! Better use functions from `network-uri`. 
+  
+- 
+

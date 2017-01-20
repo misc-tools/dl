@@ -25,3 +25,6 @@ bin/*
 \#*
 .\#*
 
+# Others
+*.pdf
+*.html

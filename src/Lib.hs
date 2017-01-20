@@ -9,6 +9,7 @@ import Network.HTTP
 import Text.HTML.TagSoup
 import Data.Maybe
 import System.FilePath
+import Network.URI
 import Network.HTTP.Conduit
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
@@ -18,6 +19,7 @@ import Control.Concurrent.Async
 data Option = Option
   { url :: String
   , filetype :: String
+  , location :: FilePath 
   , explore :: Bool}
 
 type URL = String
@@ -38,39 +40,53 @@ sample = Option
         <> value "pdf"
         <> metavar "FILETYPE"
         <> help "filetype to download (default: PDF)" )
+     <*> strOption
+         ( long "location"
+        <> short 'l'
+        <> value "./"
+        <> metavar "LOCATION"
+        <> help "directory to save files into")
      <*> switch
          ( long "explore"
         <> short 'e'
         <> help "Whether to explore the URL and report the resources available" )
 
 process :: Option -> IO ()
-process (Option u f False) = downloadResources u f 
-process (Option u f True) = getStatistics u
+process (Option url filetype location False) = downloadResources url filetype location
+process (Option url filetype location True) = getStatistics url
 
 sampleUrl :: URL
-sampleUrl = "http://stanford.edu/~pyzhang/publication.html"
+sampleUrl = "http://www.winlab.rutgers.edu/~vietnh/research.html"
 
 -- | download resources of a certain type from the website 
-downloadResources :: URL -> FileType -> IO ()
-downloadResources url ft = do
+downloadResources :: URL -> FileType -> FilePath -> IO ()
+downloadResources url ft locationtosave =   if isNothing $ parseURI url
+  then do
+  putStrLn "Invalid url. Exit..."
+  return ()
+  else do
+
   putStrLn $ "Start download from " ++ url
   putStrLn $ "File type to download: " ++ ft 
-  allLinks <- getResources url 
+  allLinks <- getResources url
   let linksToDownload = map (normalizeLink (takeDirectory url)) $ filter f allLinks
   putStrLn "Links to download: "
   mapM_ putStrLn linksToDownload
   putStrLn "Begin to download..."
-  xs <- foldr conc (return []) (map downloadResource linksToDownload)
+  xs <- foldr conc (return []) (map (\link -> downloadResource link locationtosave)  linksToDownload)
   print (map B.length xs)
   where
     f link = (takeExtension link) == ("." ++ ft)
     conc ioa ioas = do
       (a,as) <- concurrently ioa ioas
       return (a:as)
+
 -- | download a single resource 
-downloadResource :: URL -> IO B.ByteString
-downloadResource url = do
+downloadResource :: URL -> FilePath -> IO B.ByteString
+downloadResource url location= do
   res <- L.toStrict <$> simpleHttp url
+  let filename = location </> (takeFileName url)
+  B.writeFile filename res 
   putStrLn $ "Finished: " ++ url
   return res
 
@@ -78,6 +94,7 @@ downloadResource url = do
 getResources :: URL  -> IO [Link]
 getResources url= do
   src <- getResponseBody =<< simpleHTTP (getRequest url)
+  putStrLn src
   let tags = parseTags src
   let a_tags = getATags tags
   let links = map (fromJust) $ filter isJust $ map extractLink a_tags
@@ -99,12 +116,13 @@ getATags tags = filter f tags
   where f (TagOpen "a" _) = True
         f _ = False
 
--- | normalize a link, if it's relative (start with "./") then replace it with its absolute link.
+-- | normalize a link, if it's relative, replace it with its absolute link.
 normalizeLink :: URL -> URL -> URL
-normalizeLink baseUrl url = if head url == '.'
-  then baseUrl ++ tail url 
-  else url
-  
+normalizeLink baseUrl url = url
+
+  -- if isRelativeReference url
+  -- then fromJust $ (fromJust $ parseURI url) `relativeTo` (fromJust $ parseURI baseUrl)
+  -- else url 
 
 -- | extract link from <a ...> tag -- heavy template matching
 extractLink :: Tag String -> Maybe String
