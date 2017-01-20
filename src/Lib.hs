@@ -65,21 +65,25 @@ downloadResources url ft locationtosave =   if isNothing $ parseURI url
   putStrLn "Invalid url. Exit..."
   return ()
   else do
-
   putStrLn $ "Start download from " ++ url
   putStrLn $ "File type to download: " ++ ft 
   allLinks <- getResources url
   let linksToDownload = map (normalizeLink (takeDirectory url)) $ filter f allLinks
-  putStrLn "Links to download: "
-  mapM_ putStrLn linksToDownload
-  putStrLn "Begin to download..."
-  xs <- foldr conc (return []) (map (\link -> downloadResource link locationtosave)  linksToDownload)
-  print (map B.length xs)
-  where
-    f link = (takeExtension link) == ("." ++ ft)
-    conc ioa ioas = do
-      (a,as) <- concurrently ioa ioas
-      return (a:as)
+  if linksToDownload == []
+    then
+    putStrLn "No link to download. Exit..."
+    else do 
+    putStrLn "Links to download: "
+    mapM_ putStrLn linksToDownload
+    putStrLn "Begin to download..."
+    xs <- foldr conc (return []) (map (\link -> downloadResource link locationtosave)  linksToDownload)
+    print (map B.length xs)
+    putStrLn "DONE. Exit..."
+      where
+        f link = (takeExtension link) == ("." ++ ft)
+        conc ioa ioas = do
+          (a,as) <- concurrently ioa ioas
+          return (a:as)
 
 -- | download a single resource 
 downloadResource :: URL -> FilePath -> IO B.ByteString
@@ -92,13 +96,16 @@ downloadResource url location= do
 
 -- | get all resources from the website
 getResources :: URL  -> IO [Link]
-getResources url= do
-  src <- getResponseBody =<< simpleHTTP (getRequest url)
-  putStrLn src
-  let tags = parseTags src
-  let a_tags = getATags tags
-  let links = map (fromJust) $ filter isJust $ map extractLink a_tags
-  return links 
+getResources url = do
+  code <- getResponseCode =<< simpleHTTP (getRequest url)
+  case code of 
+    (2,0,0) -> do 
+      src <- getResponseBody =<< simpleHTTP (getRequest url)
+      let tags = parseTags src
+      let a_tags = getATags tags
+      let links = map (fromJust) $ filter isJust $ map extractLink a_tags
+      return links
+    otherwise -> return [] 
   
 -- | count how many files of each type from a website 
 getStatistics :: URL -> IO ()
