@@ -81,5 +81,23 @@ and directories are in `System.FilePath.Posix`
 - The link to `network-uri` package:
   https://hackage.haskell.org/package/network-uri-2.6.1.0/docs/Network-URI.html
   
--   
+- Currently need a solution for finding the current directory from a
+  URL. For example:
+  
+```sh
+http://wwww.example.com/doc/ --> http://www.example.com/doc/
+http://wwww.example.com/doc/index.html --> http://www.example.com/doc/
 
+
+```
+
+- Fixed it by checking `uriPath` of the URI object. 
+
+- To do: 
+  + Exception handler, so that even when a link causes exception, the
+    other links can still be downloaded using other threads. 
+  + Fix bug "https not supported". For example, execute this command:
+  
+```sh
+$ dl -u https://www.cs.princeton.edu/courses/archive/spring17/cos598A/readinglist.html 
+```

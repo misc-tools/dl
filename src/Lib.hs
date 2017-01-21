@@ -68,7 +68,8 @@ downloadResources url ft locationtosave =   if isNothing $ parseURI url
   putStrLn $ "Start download from " ++ url
   putStrLn $ "File type to download: " ++ ft 
   allLinks <- getResources url
-  let linksToDownload = map (normalizeLink (takeDirectory url)) $ filter f allLinks
+  putStrLn $ "Base Url = " ++ getBaseUrl url 
+  let linksToDownload = filter (/= "") $ map (normalizeLink (getBaseUrl url)) $ filter f allLinks
   if linksToDownload == []
     then
     putStrLn "No link to download. Exit..."
@@ -84,6 +85,12 @@ downloadResources url ft locationtosave =   if isNothing $ parseURI url
           (a,as) <- concurrently ioa ioas
           return (a:as)
 
+-- | from the provided URL, finding the base url 
+getBaseUrl :: URL -> URL
+getBaseUrl url = case parseURI url of
+  Nothing -> ""
+  Just u -> if uriPath u == "" then url ++ "/" else (takeDirectory url ++ "/")
+  
 -- | download a single resource 
 downloadResource :: URL -> FilePath -> IO () -- B.ByteString
 downloadResource url location= case parseURI url of
