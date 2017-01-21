@@ -76,9 +76,7 @@ downloadResources url ft locationtosave =   if isNothing $ parseURI url
     putStrLn "Links to download: "
     mapM_ putStrLn linksToDownload
     putStrLn "Begin to download..."
-    --xs <- foldr conc (return []) (map (\link -> downloadResource link locationtosave)  linksToDownload)
     foldr conc (return []) (map (\link -> downloadResource link locationtosave)  linksToDownload)
-    -- print (map B.length xs)
     putStrLn "ALL DONE. Exit..."
       where
         f link = (takeExtension link) == ("." ++ ft)
@@ -128,11 +126,13 @@ getATags tags = filter f tags
 
 -- | normalize a link, if it's relative, replace it with its absolute link.
 normalizeLink :: URL -> URL -> URL
-normalizeLink baseUrl url = url
-
-  -- if isRelativeReference url
-  -- then fromJust $ (fromJust $ parseURI url) `relativeTo` (fromJust $ parseURI baseUrl)
-  -- else url 
+normalizeLink baseUrl url = case parseAbsoluteURI url of
+  Just a -> url
+  Nothing -> case parseRelativeReference url of
+    Nothing -> ""
+    Just relativeURI -> case parseAbsoluteURI baseUrl of
+      Nothing -> ""
+      Just baseURI -> show (relativeURI `relativeTo` baseURI)
 
 -- | extract link from <a ...> tag -- heavy template matching
 extractLink :: Tag String -> Maybe String

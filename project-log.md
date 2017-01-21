@@ -76,3 +76,10 @@ and directories are in `System.FilePath.Posix`
   + Fix the problem of relative links. Convert them to absolute links,
     so that they are downloadable. 
 
+## Jan 21, 2017 
+
+- The link to `network-uri` package:
+  https://hackage.haskell.org/package/network-uri-2.6.1.0/docs/Network-URI.html
+  
+-   
+
