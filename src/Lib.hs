@@ -132,7 +132,6 @@ getStatistics url = do
 
 -- | get all tags <a ...>
 getATags :: Text.StringLike.StringLike str => [Tag str] -> [Tag str]
---getATags :: [Tag String] -> [Tag String]
 getATags tags = filter f tags
   where f (TagOpen "a" _) = True
         f _ = False
@@ -150,7 +149,6 @@ normalizeLink baseUrl url = case parseAbsoluteURI url of
 
 -- | extract link from <a ...> tag -- heavy template matching
 extractLink :: Text.StringLike.StringLike str => Tag str -> Maybe str
---extractLink :: Tag String -> Maybe String
 extractLink (TagOpen "a" listparams) = go listparams
   where go lps = case lps of
           [] -> Nothing

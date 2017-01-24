@@ -14,4 +14,7 @@ etc. from a given HTML page.
 - Once requested, the tool will download the resources concurrently,
   with good exception handlers. 
   
-  
+## To do
+
+- Add how to run 
+- Summarize development notes 
