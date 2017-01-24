@@ -96,12 +96,16 @@ downloadResource :: URL -> FilePath -> IO () -- B.ByteString
 downloadResource url location= case parseURI url of
   Nothing -> do
     putStrLn $ "WARNING: " ++ url ++ " is not a valid link"
-  otherwise -> do 
-    res <- L.toStrict <$> simpleHttp url
-    let filename = location </> (takeFileName url)
-    B.writeFile filename res 
-    putStrLn $ "FINISHED: " ++ url
-
+  otherwise -> do
+    code <- getResponseCode =<< simpleHTTP (getRequest url)
+    case code of
+      (2,0,0) -> do
+        res <- L.toStrict <$> simpleHttp url
+        let filename = location </> (takeFileName url)
+        B.writeFile filename res 
+        putStrLn $ "FINISHED: " ++ url
+      otherwise -> putStrLn $ "WARNING: Unable to download from " ++ url
+      
 -- | get all resources from the website
 getResources :: URL  -> IO [Link]
 getResources url = do

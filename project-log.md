@@ -101,3 +101,9 @@ http://wwww.example.com/doc/index.html --> http://www.example.com/doc/
 ```sh
 $ dl -u https://www.cs.princeton.edu/courses/archive/spring17/cos598A/readinglist.html 
 ```
+
+## Jan 23, 2017 
+
+- Added a check to see if a link got from the webpage can be
+  downloaded or not. 
+  
