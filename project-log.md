@@ -107,3 +107,10 @@ $ dl -u https://www.cs.princeton.edu/courses/archive/spring17/cos598A/readinglis
 - Added a check to see if a link got from the webpage can be
   downloaded or not. 
   
+- I found nicer solution: using `catch` from `Control.Exception`. An
+  example from StackOverflow:
+  http://stackoverflow.com/questions/9028636/how-can-i-catch-a-404-status-exception-thrown-by-simplehttp-of-http-conduit
+  
+- Note: `simpleHTTP` cannot deal with HTTPS, so I changed to
+  `simpleHttp` of `http-conduit`. In this case, I need to deal with
+  exception raised by `simpleHttp`. 

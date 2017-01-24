@@ -1,3 +1,4 @@
+{-# LANGUAGE Strict #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Lib
@@ -15,6 +16,9 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 import Control.Applicative
 import Control.Concurrent.Async
+import Control.Exception as X
+import Text.StringLike
+import Data.ByteString.Lazy.Char8 (unpack)
 
 data Option = Option
   { url :: String
@@ -65,7 +69,7 @@ downloadResources url ft locationtosave =   if isNothing $ parseURI url
   putStrLn "Invalid url. Exit..."
   return ()
   else do
-  putStrLn $ "Start download from " ++ url
+  putStrLn $ "Start download from " ++ url ++ "..."
   putStrLn $ "File type to download: " ++ ft 
   allLinks <- getResources url
   putStrLn $ "Base Url = " ++ getBaseUrl url 
@@ -93,31 +97,28 @@ getBaseUrl url = case parseURI url of
   
 -- | download a single resource 
 downloadResource :: URL -> FilePath -> IO () -- B.ByteString
-downloadResource url location= case parseURI url of
-  Nothing -> do
-    putStrLn $ "WARNING: " ++ url ++ " is not a valid link"
-  otherwise -> do
-    code <- getResponseCode =<< simpleHTTP (getRequest url)
-    case code of
-      (2,0,0) -> do
-        res <- L.toStrict <$> simpleHttp url
-        let filename = location </> (takeFileName url)
-        B.writeFile filename res 
-        putStrLn $ "FINISHED: " ++ url
-      otherwise -> putStrLn $ "WARNING: Unable to download from " ++ url
-      
+downloadResource url location = do
+  res <- (simpleHttp url) `X.catch` statusExceptionHandler
+  case res of x | x == L.empty -> putStrLn "This resource cannot be downloaded"
+                | otherwise -> do
+                    let filename = location </> (takeFileName url)
+                    L.writeFile filename res 
+                    putStrLn $ "FINISHED: " ++ url
+
 -- | get all resources from the website
-getResources :: URL  -> IO [Link]
+getResources :: URL -> IO [Link]
 getResources url = do
-  code <- getResponseCode =<< simpleHTTP (getRequest url)
-  case code of 
-    (2,0,0) -> do 
-      src <- getResponseBody =<< simpleHTTP (getRequest url)
-      let tags = parseTags src
-      let a_tags = getATags tags
-      let links = map (fromJust) $ filter isJust $ map extractLink a_tags
-      return links
-    otherwise -> return [] 
+  src <- (simpleHttp url) `X.catch` statusExceptionHandler
+  case src of x 
+                | x == L.empty -> do putStrLn "No link to download"; return []
+                | otherwise -> do     
+                    let tags = parseTags src
+                    let a_tags = getATags tags
+                    let links = map (fromJust) $ filter isJust $ map extractLink a_tags
+                    return $ map unpack links
+
+statusExceptionHandler :: SomeException -> IO L.ByteString
+statusExceptionHandler e = (putStrLn "oops...") >> (return L.empty)
   
 -- | count how many files of each type from a website 
 getStatistics :: URL -> IO ()
@@ -130,10 +131,12 @@ getStatistics url = do
   mapM_ putStrLn extensions
 
 -- | get all tags <a ...>
-getATags :: [Tag String] -> [Tag String]
+getATags :: Text.StringLike.StringLike str => [Tag str] -> [Tag str]
+--getATags :: [Tag String] -> [Tag String]
 getATags tags = filter f tags
   where f (TagOpen "a" _) = True
         f _ = False
+
 
 -- | normalize a link, if it's relative, replace it with its absolute link.
 normalizeLink :: URL -> URL -> URL
@@ -146,7 +149,8 @@ normalizeLink baseUrl url = case parseAbsoluteURI url of
       Just baseURI -> show (relativeURI `relativeTo` baseURI)
 
 -- | extract link from <a ...> tag -- heavy template matching
-extractLink :: Tag String -> Maybe String
+extractLink :: Text.StringLike.StringLike str => Tag str -> Maybe str
+--extractLink :: Tag String -> Maybe String
 extractLink (TagOpen "a" listparams) = go listparams
   where go lps = case lps of
           [] -> Nothing
